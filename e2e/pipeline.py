@@ -32,15 +32,24 @@ def generate_ts(factory: Callable[[], Model], out: Path) -> None:
     (out / "model.ts").write_text(code)
 
 
-def export_py(dirs: Iterable[Path]) -> None:
-    """Run mxlweb-core's mxlpy export for every `dir/model.ts` in one Node process."""
+def _npm_run(script: str, dirs: Iterable[Path]) -> None:
     dirs = [str(d) for d in dirs if (d / "model.ts").exists()]
     if dirs:
         subprocess.run(  # noqa: S603
-            ["npm", "run", "--silent", "export-mxlpy", "--", *dirs],  # noqa: S607
+            ["npm", "run", "--silent", script, "--", *dirs],  # noqa: S607
             cwd=ROOT,
             check=True,
         )
+
+
+def export_py(dirs: Iterable[Path]) -> None:
+    """Run mxlweb-core's mxlpy export for every `dir/model.ts` in one Node process."""
+    _npm_run("export-mxlpy", dirs)
+
+
+def export_mxl_json(dirs: Iterable[Path]) -> None:
+    """Write `dir/model.mxl.json` (mxlweb-core `buildMxlJson`) for every `dir/model.ts`."""
+    _npm_run("export-mxl-json", dirs)
 
 
 def load_generated(path: Path) -> Model:

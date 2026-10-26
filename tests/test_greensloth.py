@@ -1,54 +1,51 @@
-"""green-sloth's own model.ts (via mxlweb-core) against the mxl-models originals.
+"""green-sloth's model.ts must be exactly what the codegen makes of mxl-models.
 
-Diagnostic: the two collections are authored independently, so differences
-are expected. Each one is listed in `xfails.toml` with its reason; fixes go
-into the codegen, never into either side's model files by hand.
+Compared semantically, via mxlweb-core's `buildMxlJson` of both files: values,
+expressions, stoichiometry, units, display/LaTeX names and sliders.
+Regenerate with `uv run python -m e2e.regenerate_greensloth`.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from e2e import compare, greensloth, xfails
+from e2e import greensloth, xfails
 
 if TYPE_CHECKING:
-    from conftest import RoundTrip
+    from pathlib import Path
 
 
-def models(check: str) -> pytest.MarkDecorator:
-    return pytest.mark.parametrize(
-        "greensloth_pair",
-        xfails.params("greensloth", list(greensloth.SLUGS), check),
-        indirect=True,
-    )
+def _load(d: Path) -> dict[str, Any]:
+    if (err := d / "export-error.txt").exists():
+        pytest.fail(err.read_text(), pytrace=False)
+    return json.loads((d / "model.mxl.json").read_text())
 
 
-def _check(diffs: list[str]) -> None:
-    assert not diffs, "\n".join(diffs)
+def _diff(committed: dict[str, Any], generated: dict[str, Any]) -> list[str]:
+    diffs = []
+    for section in sorted(committed.keys() | generated.keys()):
+        a, b = committed.get(section, {}), generated.get(section, {})
+        if missing := sorted(b.keys() - a.keys()):
+            diffs.append(f"{section}: only generated {missing}")
+        if extra := sorted(a.keys() - b.keys()):
+            diffs.append(f"{section}: only committed {extra}")
+        diffs.extend(
+            f"{section}.{k}: differs"
+            for k in sorted(a.keys() & b.keys())
+            if a[k] != b[k]
+        )
+    return diffs
 
 
-@models("structure")
-def test_structure(greensloth_pair: RoundTrip) -> None:
-    p = greensloth_pair
-    _check(compare.structure(p.reference, p.generated, p.name_map))
-
-
-@models("values")
-def test_values(greensloth_pair: RoundTrip) -> None:
-    p = greensloth_pair
-    _check(compare.values(p.reference, p.generated, p.name_map))
-
-
-@models("args")
-def test_args(greensloth_pair: RoundTrip) -> None:
-    p = greensloth_pair
-    _check(compare.args(p.reference, p.generated, p.name_map))
-
-
-@models("units")
-@pytest.mark.xfail(raises=ImportError, reason=xfails.UNITS_PENDING, strict=True)
-def test_units(greensloth_pair: RoundTrip) -> None:
-    p = greensloth_pair
-    _check(compare.units(p.reference, p.generated, p.name_map))
+@pytest.mark.parametrize(
+    "slug", xfails.params("greensloth", list(greensloth.SLUGS), "generated")
+)
+def test_generated(slug: str, greensloth_json: dict[str, tuple[Path, Path]]) -> None:
+    committed_dir, generated_dir = greensloth_json[slug]
+    committed = _load(committed_dir)["model"]
+    generated = _load(generated_dir)["model"]
+    diffs = _diff(committed, generated)
+    assert not diffs, "\n".join(diffs[:40])

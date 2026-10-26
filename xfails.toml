@@ -1,47 +1,58 @@
 # Known, accepted differences: phase -> model -> check -> reason. See e2e/xfails.py.
 # Every entry is a strict xfail: once the difference is gone, remove the entry.
 #
-# Phase "greensloth": green-sloth's model.ts files are authored independently of
-# mxl-models (mxl-models ADR 0004). The entries below are drift found on
-# 2026-10-26; they are fixed by regenerating / updating the green-sloth models,
-# never by hand-editing either side to make this suite pass.
+# Phase "greensloth": green-sloth's model.ts is generated from mxl-models
+# (`python -m e2e.regenerate_greensloth`). Regeneration waits until the shared
+# unit representation lands (MxlPy#181, mxlweb-core#30): until then the
+# generated units aren't green-sloth's LaTeX unit strings.
+
+[greensloth.bellasio2019]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.davis2017]
-structure = "mxl-models has derived K_deltaG, green-sloth doesn't"
-values = "PPFD default: green-sloth 100, mxl-models 0"
-args = "PPFD default differs (see values), plus missing K_deltaG"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.ebenhoeh2014]
-structure = "green-sloth model.ts predates readout export (readouts are derived values there); extra cPPFD parameter, no protons_stroma_chl"
-values = "green-sloth has an extra cPPFD parameter"
-args = "PSII/PSI light-harvesting terms differ (green-sloth scales PPFD via cPPFD)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.hahn1987]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.lam2026]
-structure = "green-sloth model.ts predates readout export (NPQ_* readouts are derived values there)"
-args = "mxl-models' rates switch to dark rate constants when ppfd == 0, green-sloth's don't"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.lazar1997]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.li2021]
-structure = "mxl-models has k_Mehler, ATPsynth_activity, K_deltaG, relative_Cl_flux_VCCN1; green-sloth doesn't"
-values = "mxl-models has parameter k_Mehler, green-sloth doesn't"
-args = "entities only in mxl-models (see structure)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.matuszynska2016]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.matuszynska2019]
-structure = "green-sloth model.ts predates readout export (readouts are derived values there)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.morales2018]
-args = "mxl-models clamps fRBss_r by fRBmax, green-sloth doesn't"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.poolman2000]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.saadat2021]
-structure = "green-sloth model.ts predates readout export (no readouts at all); no protons_stroma_chl / ksat_*_protons derived values"
-args = "readouts and derived values only in mxl-models (see structure)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.salvatori2022]
-args = "mxl-models' RuBisCO activation uses min(d, pH), green-sloth's uses d"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.yokota1985]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.zaks2012]
-structure = "green-sloth model.ts predates readout export (readouts are derived values there)"
-values = "LightIntensity default: green-sloth 100, mxl-models 0"
-args = "LightIntensity default differs (see values)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
 
 [greensloth.zhu2005]
-structure = "green-sloth model.ts predates readout export (readouts are derived values there)"
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"
+
+[greensloth.zhu2009]
+generated = "not regenerated from mxl-models yet (waits for MxlPy#181 / mxlweb-core#30)"

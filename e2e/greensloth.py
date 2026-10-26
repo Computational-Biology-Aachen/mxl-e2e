@@ -1,24 +1,37 @@
-"""Phase 2: green-sloth's own `model.ts` files against their mxl-models originals.
+"""green-sloth's models, generated from their mxl-models originals.
 
-green-sloth authors its models independently (green-sloth ADR 0002, mxl-models
-ADR 0004), so their ids differ from the mxl-models ones. `maps/<slug>.json`
-records which green-sloth id corresponds to which mxl-models id; the
-comparison only diagnoses where the two have drifted apart.
+For every model in both collections, green-sloth's `model.ts` is mxlpy's
+mxlweb export of the mxl-models model (`regenerate`), so the two are the same
+model. `tests/test_greensloth.py` checks that the committed `model.ts` still is
+what the codegen produces.
+
+`maps/<slug>.json` record which id green-sloth's hand-written models used for
+which mxl-models id; `migrate_ids` uses them to move green-sloth's own
+references (`meta.ts`) over to the generated ids.
 """
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import json
+import re
 import shutil
+import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from mxlpy import meta
+from mxlpy.meta import canonical_identifier_map
+
+from e2e.models import MODELS
 from e2e.pipeline import BUILD, ROOT
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 GREENSLOTH = ROOT.parents[1] / "pages" / "green-sloth"
+GREENSLOTH_MODELS = GREENSLOTH / "src" / "lib" / "models"
 MAPS = ROOT / "maps"
 
 # green-sloth slug -> e2e.models.MODELS key, for every model in both collections.
@@ -68,18 +81,58 @@ class NameMap:
         }
         (MAPS / f"{self.slug}.json").write_text(json.dumps(data, indent=2) + "\n")
 
-    def from_mxlmodels(self, ids: list[str]) -> dict[str, str]:
-        """mxl-models id -> green-sloth id; ids without a counterpart map to a marker."""
-        inverse = {v: k for k, v in self.to_mxlmodels.items()}
-        return {i: inverse.get(i, f"<no green-sloth id for {i!r}>") for i in ids}
+
+def docstring(slug: str) -> str:
+    """The model's mxl-models module docstring, as the JSDoc block above `initModel`."""
+    doc = inspect.cleandoc(
+        importlib.import_module(MODELS[SLUGS[slug]].__module__).__doc__ or ""
+    )
+    lines = [f" * {line}".rstrip() for line in doc.strip().splitlines()]
+    return "\n".join(["/**", *lines, " */"])
 
 
-def stage(slug: str) -> Path:
-    """Copy green-sloth's `model.ts` (and the names it imports) into the build dir."""
-    out = BUILD / "greensloth" / slug
+def generate(slug: str) -> str:
+    """green-sloth's `model.ts` for `slug`, generated from mxl-models."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return meta.generate_model_code_mxlweb(
+            MODELS[SLUGS[slug]](), docstring=docstring(slug)
+        )
+
+
+def stage(slug: str, *, generated: bool = False) -> Path:
+    """Copy green-sloth's committed (or a freshly generated) `model.ts` into the build dir."""
+    out = BUILD / "greensloth" / slug / ("generated" if generated else "committed")
     out.mkdir(parents=True, exist_ok=True)
-    lib = GREENSLOTH / "src" / "lib"
-    shutil.copyfile(lib / "names.ts", out / "names.ts")
-    source = (lib / "models" / slug / "model.ts").read_text()
+    if generated:
+        (out / "model.ts").write_text(generate(slug))
+        return out
+    shutil.copyfile(GREENSLOTH / "src" / "lib" / "names.ts", out / "names.ts")
+    source = (GREENSLOTH_MODELS / slug / "model.ts").read_text()
     (out / "model.ts").write_text(source.replace('"#lib/names.js"', '"./names.ts"'))
     return out
+
+
+def migrate_ids(slug: str) -> dict[str, str]:
+    """Rewrite id string literals in green-sloth's `meta.ts` from its old ids to the generated ones."""
+    nm = NameMap.load(slug)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        canonical = canonical_identifier_map(MODELS[SLUGS[slug]]().ids)
+    renames = {
+        old: canonical[new]
+        for old, new in nm.to_mxlmodels.items()
+        if canonical[new] != old
+    }
+    path = GREENSLOTH_MODELS / slug / "meta.ts"
+    text = path.read_text()
+    done: dict[str, str] = {}
+
+    def rename(m: re.Match[str]) -> str:
+        if (new := renames.get(m.group(1))) is None:
+            return m.group(0)
+        done[m.group(1)] = new
+        return json.dumps(new)
+
+    path.write_text(re.sub(r'"([^"\\]*)"', rename, text))
+    return done

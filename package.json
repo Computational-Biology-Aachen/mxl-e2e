@@ -6,7 +6,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "export-mxlpy": "tsx --conditions=svelte scripts/export-mxlpy.ts"
+    "export-mxlpy": "tsx --conditions=svelte scripts/export-mxlpy.ts",
+    "export-mxl-json": "tsx --conditions=svelte scripts/export-mxl-json.ts"
   },
   "dependencies": {
     "@computational-biology-aachen/mxlweb-core": "file:../../pkg-js/mxlweb-core"

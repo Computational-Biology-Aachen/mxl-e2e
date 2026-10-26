@@ -12,9 +12,11 @@ End-to-end tests of the codegen pipeline between [MxlPy](https://github.com/Comp
 
 Both exporters map names through the same canonical identifier rules (mxl-schemas `v1/identifiers.json`), so the generated model's ids are `canonical_identifier_map(original.ids)`: `"CO2 (dissolved)"` becomes `CO2_dissolved`, with the original name kept as `display_name`.
 
-**Phase 2, green-sloth** (`tests/test_greensloth.py`): green-sloth's own `model.ts` files go through step 2 and are compared against their mxl-models originals. The two collections are authored independently, so `maps/<slug>.json` records which green-sloth id corresponds to which mxl-models id (seeded by `python -m e2e.seed_map`, then reviewed by hand).
+**Phase 2, green-sloth** (`tests/test_greensloth.py`): for every model in both collections, green-sloth's `model.ts` is generated from mxl-models (`uv run python -m e2e.regenerate_greensloth [slug ...]`), so the two are the same model. mxl-models is the single source, including the display names, sliders and units green-sloth shows. The test checks that the committed `model.ts` is still exactly what the codegen produces, comparing mxlweb-core's `buildMxlJson` of both files: values, expressions, stoichiometry, units, display/LaTeX names and sliders.
 
-**Known differences** live in `xfails.toml` (phase → model → check → reason) and become strict xfails: a difference that disappears turns the suite red until its entry is removed. Fix differences in the codegen, never by hand-editing models to satisfy the suite. Unit checks are expected to fail until the shared unit representation lands (MxlPy#181, mxlweb-core#30).
+`maps/<slug>.json` record which id green-sloth's hand-written models used for which mxl-models id (seeded by `python -m e2e.seed_map`, reviewed by hand). Regeneration uses them to move green-sloth's own id references (`meta.ts`) to the generated ids.
+
+**Known differences** live in `xfails.toml` (phase → model → check → reason) and become strict xfails: a difference that disappears turns the suite red until its entry is removed. Fix differences in the codegen and regenerate, never by hand-editing models. Unit checks, and regenerating green-sloth, wait for the shared unit representation (MxlPy#181, mxlweb-core#30).
 
 ## Running
 
@@ -27,7 +29,7 @@ uv sync
 uv run pytest
 ```
 
-Generated files land in `build/` (`build/roundtrip/<model>/{model.ts,model-gen.py}`, `build/greensloth/<slug>/…`).
+Generated files land in `build/` (`build/roundtrip/<model>/{model.ts,model-gen.py}`, `build/greensloth/<slug>/{committed,generated}/…`).
 
 ## CI
 

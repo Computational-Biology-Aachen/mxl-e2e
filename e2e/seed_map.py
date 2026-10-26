@@ -1,8 +1,8 @@
 """Seed `maps/<slug>.json` (green-sloth id -> mxl-models id) for review.
 
 A one-off helper: it guesses, a human reviews and commits the result. Run
-after a session of `tests/test_greensloth.py` (or with `--stage`) so the
-green-sloth exports exist in `build/greensloth/`:
+with `--stage` (or after an earlier staged run) so the mxlpy exports of
+green-sloth's committed models exist in `build/greensloth/<slug>/committed/`:
 
     uv run python -m e2e.seed_map --stage [--force] [slug ...]
 
@@ -77,7 +77,7 @@ def seed(slug: str) -> greensloth.NameMap:
         warnings.simplefilter("ignore")
         mxl = MODELS[model]()
         canonical = canonical_identifier_map(mxl.ids)
-    gs = pipeline.load_generated(pipeline.BUILD / "greensloth" / slug / "model-gen.py")
+    gs = pipeline.load_generated(greensloth.stage(slug) / "model-gen.py")
     gs_entities, mxl_entities = _entities(gs), _entities(mxl)
     gs_ids, mxl_ids = set(gs.ids), set(mxl.ids)
 

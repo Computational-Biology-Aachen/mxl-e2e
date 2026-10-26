@@ -55,10 +55,13 @@ def roundtrip_dirs() -> dict[str, Path]:
 
 
 @pytest.fixture(scope="session")
-def greensloth_dirs() -> dict[str, Path]:
-    """Step 2 for every green-sloth model.ts, once per session."""
-    dirs = {slug: greensloth.stage(slug) for slug in greensloth.SLUGS}
-    pipeline.export_py(dirs.values())
+def greensloth_json() -> dict[str, tuple[Path, Path]]:
+    """`buildMxlJson` of green-sloth's committed and of the generated model.ts, per slug."""
+    dirs = {
+        slug: (greensloth.stage(slug), greensloth.stage(slug, generated=True))
+        for slug in greensloth.SLUGS
+    }
+    pipeline.export_mxl_json(d for pair in dirs.values() for d in pair)
     return dirs
 
 
@@ -70,14 +73,3 @@ def roundtrip(
     generated = _load(roundtrip_dirs[name])
     reference, name_map = _reference(name)
     return RoundTrip(reference, generated, name_map)
-
-
-@pytest.fixture
-def greensloth_pair(
-    request: pytest.FixtureRequest, greensloth_dirs: dict[str, Path]
-) -> RoundTrip:
-    slug = request.param
-    generated = _load(greensloth_dirs[slug])
-    name_map = greensloth.NameMap.load(slug)
-    reference, _ = _reference(name_map.model)
-    return RoundTrip(reference, generated, name_map.from_mxlmodels(list(reference.ids)))
