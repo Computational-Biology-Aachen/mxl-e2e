@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from mxlpy.units import unit_to_json
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -186,13 +187,7 @@ def display_names(ref: Model, other: Model, name_map: dict[str, str]) -> list[st
 
 
 def units(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
-    """Same unit on every entity, compared in the representation shared with mxlweb.
-
-    Needs `mxlpy.units.unit_to_json` (MxlPy#181); until then this raises
-    ImportError and the tests calling it are expected to fail.
-    """
-    from mxlpy.units import unit_to_json  # noqa: PLC0415
-
+    """Same unit on every entity, compared in the representation shared with mxlweb."""
     other_entities = _entities(other)
     diffs = []
     for name, el in _entities(ref).items():

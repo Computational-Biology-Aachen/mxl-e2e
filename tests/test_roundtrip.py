@@ -50,6 +50,5 @@ def test_display_names(roundtrip: RoundTrip) -> None:
 
 
 @models("units")
-@pytest.mark.xfail(raises=ImportError, reason=xfails.UNITS_PENDING, strict=True)
 def test_units(roundtrip: RoundTrip) -> None:
     _check(compare.units(roundtrip.reference, roundtrip.generated, roundtrip.name_map))

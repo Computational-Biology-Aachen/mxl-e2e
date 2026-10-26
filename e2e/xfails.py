@@ -16,11 +16,6 @@ XFAILS: dict[str, dict[str, dict[str, str]]] = tomllib.loads(
     (ROOT / "xfails.toml").read_text()
 )
 
-UNITS_PENDING = (
-    "units are compared in the representation shared by mxlpy and mxlweb, "
-    "which lands with MxlPy#181 / mxlweb-core#30"
-)
-
 
 def params(phase: str, models: list[str], check: str) -> list[object]:
     """`models` as pytest params, each marked xfail if `xfails.toml` lists it."""
