@@ -1,0 +1,120 @@
+name: e2e
+
+# Runs on its own (push/PR/nightly) and as a reusable workflow, called from
+# MxlPy, mxl-models, mxlweb-core and green-sloth on their PRs and pushes to main:
+#
+#   jobs:
+#     e2e:
+#       uses: Computational-Biology-Aachen/mxl-e2e/.github/workflows/e2e.yml@main
+#       with:
+#         repo: ${{ github.repository }}
+#         ref: ${{ github.event.pull_request.head.sha || github.sha }}
+#
+# The calling repo is checked out at `ref`, every other repo at main, into the
+# 0-admin meta-repo layout the path dependencies expect.
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: "Calling repository (owner/name), checked out at `ref`"
+        type: string
+        default: ""
+      ref:
+        description: "Commit of the calling repository to test"
+        type: string
+        default: ""
+      tests:
+        description: "pytest targets"
+        type: string
+        default: "tests/"
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  ORG: Computational-Biology-Aachen
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mxl-e2e
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/mxl-e2e
+          ref: ${{ github.repository == format('{0}/mxl-e2e', env.ORG) && github.sha || 'main' }}
+          path: misc/mxl-e2e
+
+      - name: Checkout MxlPy
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/MxlPy
+          ref: ${{ inputs.repo == format('{0}/MxlPy', env.ORG) && inputs.ref || 'main' }}
+          path: pkg-py/MxlPy
+
+      - name: Checkout mxl-models
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/mxl-models
+          ref: ${{ inputs.repo == format('{0}/mxl-models', env.ORG) && inputs.ref || 'main' }}
+          path: pkg-py/mxl-models
+
+      - name: Checkout mxlweb-core
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/mxlweb-core
+          ref: ${{ inputs.repo == format('{0}/mxlweb-core', env.ORG) && inputs.ref || 'main' }}
+          path: pkg-js/mxlweb-core
+
+      - name: Checkout mxl-schemas
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/mxl-schemas
+          ref: ${{ inputs.repo == format('{0}/mxl-schemas', env.ORG) && inputs.ref || 'main' }}
+          path: misc/mxl-schemas
+
+      - name: Checkout green-sloth
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.ORG }}/green-sloth
+          ref: ${{ inputs.repo == format('{0}/green-sloth', env.ORG) && inputs.ref || 'main' }}
+          path: pages/green-sloth
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.15
+
+      - name: Install mxlweb-core dependencies
+        working-directory: pkg-js/mxlweb-core
+        run: npm ci
+
+      - name: Install e2e Node dependencies
+        working-directory: misc/mxl-e2e
+        run: npm ci
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Install e2e Python environment
+        working-directory: misc/mxl-e2e
+        run: uv sync
+
+      - name: Run e2e tests
+        working-directory: misc/mxl-e2e
+        run: uv run pytest -p no:cacheprovider -W ignore::RuntimeWarning ${{ inputs.tests || 'tests/' }}
+
+      - name: Upload generated models
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-build
+          path: misc/mxl-e2e/build/
+          if-no-files-found: ignore

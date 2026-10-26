@@ -1,0 +1,18 @@
+{
+  "name": "mxl-e2e",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "export-mxlpy": "tsx --conditions=svelte scripts/export-mxlpy.ts"
+  },
+  "dependencies": {
+    "@computational-biology-aachen/mxlweb-core": "file:../../pkg-js/mxlweb-core"
+  },
+  "devDependencies": {
+    "svelte": ">=5.57.2",
+    "tsx": "^4.23.15"
+  }
+}
