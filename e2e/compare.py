@@ -186,14 +186,23 @@ def display_names(ref: Model, other: Model, name_map: dict[str, str]) -> list[st
     return diffs
 
 
+def _units(model: Model) -> dict[str, Any]:
+    """Every entity's unit, qss surrogate outputs included (the export flattens them)."""
+    out = {name: el.unit for name, el in _entities(model).items()}
+    for srg in model.get_raw_surrogates().values():
+        out.update({o: getattr(srg, "units", {}).get(o) for o in srg.outputs})
+    return out
+
+
 def units(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
     """Same unit on every entity, compared in the representation shared with mxlweb."""
-    other_entities = _entities(other)
+    other_units = _units(other)
     diffs = []
-    for name, el in _entities(ref).items():
-        if (other_el := other_entities.get(name_map[name])) is None:
+    for name, unit in _units(ref).items():
+        if name_map[name] not in other_units:
             continue
-        expected, actual = unit_to_json(el.unit), unit_to_json(other_el.unit)
+        expected = unit_to_json(unit)
+        actual = unit_to_json(other_units[name_map[name]])
         if actual != expected:
             diffs.append(f"{name_map[name]}: unit {actual!r} != {expected!r}")
     return diffs
