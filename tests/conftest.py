@@ -44,6 +44,8 @@ def _reference(name: str) -> tuple[Model, dict[str, str]]:
         return model, canonical_identifier_map(model.ids)
 
 
+# Keep the suite serial: these session fixtures write into the shared `build/`
+# tree, so `pytest -n` workers would race on the same files (see pyproject.toml).
 @pytest.fixture(scope="session")
 def roundtrip_dirs() -> dict[str, Path]:
     """Steps 1 and 2 for every mxl-models model, once per session."""

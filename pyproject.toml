@@ -19,6 +19,9 @@ exclude-newer-package = { mxlpy = false, mxlmodels = false }
 mxlmodels = { path = "../../pkg-py/mxl-models", editable = true }
 mxlpy = { path = "../../pkg-py/MxlPy", editable = true }
 
+# Run the suite serially (no `pytest -n`): the session fixtures write every
+# model into the shared `build/` tree and export them with one tsx call, so
+# parallel workers race on the same files and fail spuriously.
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
