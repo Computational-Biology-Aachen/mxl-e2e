@@ -1414,7 +1414,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mxlpy", specifier = ">=0.62.0" },
+    { name = "mxlpy", specifier = ">=0.64.0" },
     { name = "nbdime", specifier = ">=4.0.4" },
 ]
 
@@ -1439,7 +1439,7 @@ dev = [
 
 [[package]]
 name = "mxlpy"
-version = "0.63.0"
+version = "0.64.0"
 source = { editable = "../../pkg-py/MxlPy" }
 dependencies = [
     { name = "dill" },
