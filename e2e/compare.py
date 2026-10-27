@@ -7,14 +7,18 @@ models agree), with names given in the generated model's (canonical) ids.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from mxlpy.meta._via_sym_repr import valid_tex_identifier
 from mxlpy.units import unit_to_json
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import pandas as pd
-    from mxlpy import Model
+    from mxlpy import Model, Slider
 
 KINDS = ("parameters", "variables", "derived", "reactions", "readouts")
 RTOL = 1e-10
@@ -159,6 +163,16 @@ def args(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
     return diffs
 
 
+@dataclass(frozen=True)
+class _Meta:
+    """The metadata the mxlweb export carries for one entity."""
+
+    unit: Any = None
+    display_name: str | None = None
+    tex_name: str | None = None
+    slider: Slider | None = None
+
+
 def _entities(model: Model) -> dict[str, Any]:
     return {
         **model.get_raw_parameters(),
@@ -169,40 +183,71 @@ def _entities(model: Model) -> dict[str, Any]:
     }
 
 
+def _meta(model: Model) -> dict[str, _Meta]:
+    """Every entity's metadata, qss surrogate outputs included (the export flattens them)."""
+    out = {
+        name: _Meta(
+            unit=el.unit,
+            display_name=el.display_name,
+            tex_name=el.tex_name,
+            slider=getattr(el, "slider", None),
+        )
+        for name, el in _entities(model).items()
+    }
+    for srg in model.get_raw_surrogates().values():
+        units = getattr(srg, "units", {})
+        out.update({o: _Meta(unit=units.get(o)) for o in srg.outputs})
+    return out
+
+
+def _pairs(
+    ref: Model, other: Model, name_map: dict[str, str]
+) -> Iterator[tuple[str, str, _Meta, _Meta]]:
+    """(reference id, generated id, reference meta, generated meta) for every shared entity."""
+    other_meta = _meta(other)
+    for name, meta in _meta(ref).items():
+        if (other_el := other_meta.get(name_map[name])) is not None:
+            yield name, name_map[name], meta, other_el
+
+
 def display_names(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
     """A renamed id survives as the generated entity's display name."""
-    other_entities = _entities(other)
     diffs = []
-    for name, el in _entities(ref).items():
-        if (other_el := other_entities.get(name_map[name])) is None:
-            continue
-        expected = el.display_name
-        if expected is None and name_map[name] != name:
+    for name, new, meta, other_meta in _pairs(ref, other, name_map):
+        expected = meta.display_name
+        if expected is None and new != name:
             expected = name
-        if other_el.display_name != expected:
+        if other_meta.display_name != expected:
             diffs.append(
-                f"{name_map[name]}: display_name {other_el.display_name!r} != {expected!r}"
+                f"{new}: display_name {other_meta.display_name!r} != {expected!r}"
             )
     return diffs
 
 
-def _units(model: Model) -> dict[str, Any]:
-    """Every entity's unit, qss surrogate outputs included (the export flattens them)."""
-    out = {name: el.unit for name, el in _entities(model).items()}
-    for srg in model.get_raw_surrogates().values():
-        out.update({o: getattr(srg, "units", {}).get(o) for o in srg.outputs})
-    return out
+def tex_names(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
+    """Same LaTeX name, the exporter's default (the escaped original id) where unset."""
+    diffs = []
+    for name, new, meta, other_meta in _pairs(ref, other, name_map):
+        expected = meta.tex_name or valid_tex_identifier(name)
+        if other_meta.tex_name != expected:
+            diffs.append(f"{new}: tex_name {other_meta.tex_name!r} != {expected!r}")
+    return diffs
+
+
+def sliders(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
+    """Same slider (range, step, description) on every entity that has one."""
+    return [
+        f"{new}: slider {other_meta.slider!r} != {meta.slider!r}"
+        for _, new, meta, other_meta in _pairs(ref, other, name_map)
+        if other_meta.slider != meta.slider
+    ]
 
 
 def units(ref: Model, other: Model, name_map: dict[str, str]) -> list[str]:
     """Same unit on every entity, compared in the representation shared with mxlweb."""
-    other_units = _units(other)
     diffs = []
-    for name, unit in _units(ref).items():
-        if name_map[name] not in other_units:
-            continue
-        expected = unit_to_json(unit)
-        actual = unit_to_json(other_units[name_map[name]])
+    for _, new, meta, other_meta in _pairs(ref, other, name_map):
+        expected, actual = unit_to_json(meta.unit), unit_to_json(other_meta.unit)
         if actual != expected:
-            diffs.append(f"{name_map[name]}: unit {actual!r} != {expected!r}")
+            diffs.append(f"{new}: unit {actual!r} != {expected!r}")
     return diffs

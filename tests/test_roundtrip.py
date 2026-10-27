@@ -52,3 +52,17 @@ def test_display_names(roundtrip: RoundTrip) -> None:
 @models("units")
 def test_units(roundtrip: RoundTrip) -> None:
     _check(compare.units(roundtrip.reference, roundtrip.generated, roundtrip.name_map))
+
+
+@models("tex_names")
+def test_tex_names(roundtrip: RoundTrip) -> None:
+    _check(
+        compare.tex_names(roundtrip.reference, roundtrip.generated, roundtrip.name_map)
+    )
+
+
+@models("sliders")
+def test_sliders(roundtrip: RoundTrip) -> None:
+    _check(
+        compare.sliders(roundtrip.reference, roundtrip.generated, roundtrip.name_map)
+    )
