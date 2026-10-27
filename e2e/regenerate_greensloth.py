@@ -5,8 +5,8 @@
 Writes `src/lib/models/<slug>/model.ts` in the sibling green-sloth checkout,
 moves the id references in its `meta.ts` over to the generated ids, formats
 the files with green-sloth's own prettier and refreshes `model.mxl.json`
-(`npm run generate:mxl`). Review the green-sloth diff before committing, and
-remove the slugs' `generated` entries from `xfails.toml`.
+(`npm run generate:mxl`, then prettier). Review the green-sloth diff before
+committing.
 """
 
 from __future__ import annotations
@@ -37,6 +37,13 @@ def main() -> None:
         check=True,
     )
     subprocess.run(["npm", "run", "generate:mxl"], cwd=cwd, check=True)  # noqa: S607
+    # generate:mxl writes numbers as JSON.stringify does (6.022e+23); format them
+    # the way green-sloth's prettier (and sync.sh) leaves them, so they don't flap.
+    subprocess.run(
+        ["npx", "prettier", "--write", "src/lib/models/*/model.mxl.json"],  # noqa: S607
+        cwd=cwd,
+        check=True,
+    )
 
 
 if __name__ == "__main__":
