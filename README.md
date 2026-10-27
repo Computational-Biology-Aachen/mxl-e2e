@@ -1,5 +1,7 @@
 # mxl-e2e
 
+[![mxl-e2e](https://img.shields.io/github/actions/workflow/status/Computational-Biology-Aachen/mxl-e2e/e2e.yml?branch=main&label=mxl-e2e&style=flat-square)](https://github.com/Computational-Biology-Aachen/mxl-e2e/actions/workflows/e2e.yml)
+
 End-to-end tests of the codegen pipeline between [MxlPy](https://github.com/Computational-Biology-Aachen/MxlPy) and [mxlweb-core](https://github.com/Computational-Biology-Aachen/mxlweb-core), run against every model in [mxl-models](https://github.com/Computational-Biology-Aachen/mxl-models) and [green-sloth](https://github.com/Computational-Biology-Aachen/green-sloth).
 
 ## The pipeline
