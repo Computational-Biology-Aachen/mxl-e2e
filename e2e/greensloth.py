@@ -5,9 +5,10 @@ mxlweb export of the mxl-models model (`regenerate`), so the two are the same
 model. `tests/test_greensloth.py` checks that the committed `model.ts` still is
 what the codegen produces.
 
-`maps/<slug>.json` record which id green-sloth's hand-written models used for
-which mxl-models id; `migrate_ids` uses them to move green-sloth's own
-references (`meta.ts`) over to the generated ids.
+`maps/<slug>.json` record the ids green-sloth's hand-written models used where
+the generated id differs (old id -> generated id), for the four models whose
+ids changed when they were first generated. `migrate_ids` uses them to move
+green-sloth's own references (`meta.ts`) over to the generated ids.
 """
 
 from __future__ import annotations
@@ -18,11 +19,9 @@ import json
 import re
 import shutil
 import warnings
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from mxlpy import meta
-from mxlpy.meta import canonical_identifier_map
 
 from e2e.models import MODELS
 from e2e.pipeline import BUILD, ROOT
@@ -54,32 +53,6 @@ SLUGS: dict[str, str] = {
     "zhu2005": "zhu2005",
     "zhu2009": "zhu2009",
 }
-
-
-@dataclass
-class NameMap:
-    """green-sloth id -> mxl-models id, plus the ids known to have no counterpart."""
-
-    slug: str
-    model: str
-    to_mxlmodels: dict[str, str]
-    only_greensloth: list[str] = field(default_factory=list)
-    only_mxlmodels: list[str] = field(default_factory=list)
-
-    @classmethod
-    def load(cls, slug: str) -> NameMap:
-        data = json.loads((MAPS / f"{slug}.json").read_text())
-        return cls(slug=slug, **data)
-
-    def dump(self) -> None:
-        MAPS.mkdir(exist_ok=True)
-        data = {
-            "model": self.model,
-            "to_mxlmodels": dict(sorted(self.to_mxlmodels.items())),
-            "only_greensloth": sorted(self.only_greensloth),
-            "only_mxlmodels": sorted(self.only_mxlmodels),
-        }
-        (MAPS / f"{self.slug}.json").write_text(json.dumps(data, indent=2) + "\n")
 
 
 def docstring(slug: str) -> str:
@@ -115,15 +88,8 @@ def stage(slug: str, *, generated: bool = False) -> Path:
 
 def migrate_ids(slug: str) -> dict[str, str]:
     """Rewrite id string literals in green-sloth's `meta.ts` from its old ids to the generated ones."""
-    nm = NameMap.load(slug)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        canonical = canonical_identifier_map(MODELS[SLUGS[slug]]().ids)
-    renames = {
-        old: canonical[new]
-        for old, new in nm.to_mxlmodels.items()
-        if canonical[new] != old
-    }
+    path = MAPS / f"{slug}.json"
+    renames: dict[str, str] = json.loads(path.read_text()) if path.exists() else {}
     path = GREENSLOTH_MODELS / slug / "meta.ts"
     text = path.read_text()
     done: dict[str, str] = {}

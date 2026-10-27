@@ -14,9 +14,9 @@ Both exporters map names through the same canonical identifier rules (mxl-schema
 
 **Phase 2, green-sloth** (`tests/test_greensloth.py`): for every model in both collections, green-sloth's `model.ts` is generated from mxl-models (`uv run python -m e2e.regenerate_greensloth [slug ...]`), so the two are the same model. mxl-models is the single source, including the display names, sliders and units green-sloth shows. The test checks that the committed `model.ts` is still exactly what the codegen produces, comparing mxlweb-core's `buildMxlJson` of both files: values, expressions, stoichiometry, units, display/LaTeX names and sliders.
 
-`maps/<slug>.json` record which id green-sloth's hand-written models used for which mxl-models id (seeded by `python -m e2e.seed_map`, reviewed by hand). Regeneration uses them to move green-sloth's own id references (`meta.ts`) to the generated ids.
+`maps/<slug>.json` list the ids green-sloth's hand-written models used where the generated id differs (old id → generated id); only ebenhoeh2014, hahn1987, matuszynska2019 and saadat2021 have one. Regeneration uses them to move green-sloth's own id references (`meta.ts`) to the generated ids; every other id is the same on both sides.
 
-**Known differences** live in `xfails.toml` (phase → model → check → reason) and become strict xfails: a difference that disappears turns the suite red until its entry is removed. Fix differences in the codegen and regenerate, never by hand-editing models. Unit checks, and regenerating green-sloth, wait for the shared unit representation (MxlPy#181, mxlweb-core#30).
+**Known differences** live in `xfails.toml` (phase → model → check → reason) and become strict xfails: a difference that disappears turns the suite red until its entry is removed. Fix differences in the codegen and regenerate, never by hand-editing models.
 
 ## Running
 
