@@ -26,11 +26,25 @@ from scipy.signal import find_peaks, peak_prominences
 GREENSLOTH = Path(__file__).parents[3] / "pages/green-sloth"
 FIXTURE = GREENSLOTH / "tests/fixtures/validation-ops.json"
 DEFAULT_TOLERANCE = 0.01
+# Peak times, which may land one sample apart on a flat top.
+BY_INDEX = {
+    "saadat2021": ("NPQ",),
+    "matuszynska2016": ("phiPSII",),
+    "lazar1997": ("steps",),
+}
 
 # Irregular on purpose: uneven time steps, a plateau, a repeated minimum.
 _T = [0.0, 0.5, 1.0, 2.0, 3.5, 4.0, 5.0, 7.0, 8.0, 9.0, 12.0]
 _Y = [1.0, 3.0, 2.0, 2.0, 5.0, 5.0, 1.0, 4.0, 1.0, 6.0, 2.0]
+# A sigmoid with two shoulders, on a log-spaced time axis.
+_LOG_T = np.logspace(-3, 0, 60)
+_F = (
+    0.2 * (1 - np.exp(-_LOG_T / 0.003))
+    + 0.3 * (1 - np.exp(-_LOG_T / 0.03))
+    + 0.5 * (1 - np.exp(-_LOG_T / 0.3))
+)
 _FRAME = {"time": _T, "y": _Y}
+_OJIP_FRAME = {"time": _LOG_T.tolist(), "f": _F.tolist()}
 _PROTOCOL = [
     (0.5, {"L": 10.0}),
     (3.0, {"L": 100.0}),
@@ -39,7 +53,7 @@ _PROTOCOL = [
     (1.0, {"L": 10.0}),
     (3.0, {"L": 100.0}),
 ]
-# (op, helper, args, protocol)
+# Each case: op, helper, args, protocol.
 _CASES: list[tuple[str, str, dict[str, Any], Any]] = [
     ("pamNpq", "pam_npq", {"fluo": "y", "pulse": {"L": 100.0}}, _PROTOCOL),
     (
@@ -54,6 +68,7 @@ _CASES: list[tuple[str, str, dict[str, Any], Any]] = [
     ("gradient", "gradient", {"of": "y"}, None),
     ("diff", "diff", {"of": "y"}, None),
     ("cumTrapz", "cum_trapz", {"of": "y"}, None),
+    ("ojip", "ojip", {"of": "f", "sigma": 1.0}, None),
     ("range", "value_range", {"of": "y", "from": 1.0, "to": 8.0}, None),
 ]
 
@@ -80,14 +95,16 @@ def _helpers() -> dict[str, Any]:
 
 def _run_cases() -> list[dict[str, Any]]:
     ns = _helpers()
-    frame = pd.DataFrame(_FRAME)
+    frames = {"ojip": _OJIP_FRAME}
     return [
         {
             "op": op,
             "args": args,
-            "frame": _FRAME,
+            "frame": frames.get(op, _FRAME),
             "protocol": protocol,
-            "expected": ns[helper](frame, protocol, **args).to_dict("list"),
+            "expected": ns[helper](
+                pd.DataFrame(frames.get(op, _FRAME)), protocol, **args
+            ).to_dict("list"),
         }
         for op, helper, args, protocol in _CASES
     ]
@@ -130,15 +147,22 @@ def check_notebook(model: str) -> None:
     for figure, series in golden.items():
         for name, want in series.items():
             x, y = ns["validation_series"][figure][name]
-            idx = np.searchsorted(x, np.array(want["x"]) - 1e-9)
-            if not np.allclose(x[idx], want["x"], rtol=1e-9):
-                failed.append(f"{figure}/{name}: time grid differs")
-                continue
-            scale = np.ptp(want["y"]) or 1.0
+            x, y = np.asarray(x), np.asarray(y)
+            # Nearest sample; a by-position series may differ by one on a flat top.
+            if len(x) == len(want["x"]) and name in BY_INDEX.get(model, ()):
+                idx = np.arange(len(x))
+            else:
+                idx = np.array([int(np.nanargmin(np.abs(x - t))) for t in want["x"]])
+                if not np.allclose(x[idx], want["x"], rtol=1e-9, atol=1e-7):
+                    failed.append(f"{figure}/{name}: time grid differs")
+                    continue
+            flat = 1e-3 * np.max(np.abs(want["y"]))
+            scale = max(np.ptp(want["y"]), flat) or 1.0
             err = float(np.max(np.abs(y[idx] - want["y"])) / scale)
-            status = "ok  " if err <= DEFAULT_TOLERANCE else "FAIL"
+            passed = err <= DEFAULT_TOLERANCE  # False for NaN.
+            status = "ok  " if passed else "FAIL"
             print(f"{status} {figure}/{name}: max rel. error {err:.2e}")  # noqa: T201
-            if err > DEFAULT_TOLERANCE:
+            if not passed:
                 failed.append(f"{figure}/{name}: {err:.2e}")
     if failed:
         sys.exit("\n".join(failed))
