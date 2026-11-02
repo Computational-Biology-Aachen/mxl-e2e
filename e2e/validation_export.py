@@ -131,7 +131,14 @@ def check_notebook(model: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "exported.ipynb"
         subprocess.run(  # noqa: S603
-            ["npx", "vite-node", "scripts/export-validation.ts", model, str(path)],  # noqa: S607
+            [  # noqa: S607
+                "npx",
+                "vite-node",
+                "scripts/export-validation.ts",
+                model,
+                str(path),
+                "--golden-series",
+            ],
             cwd=GREENSLOTH,
             check=True,
         )
@@ -153,7 +160,9 @@ def check_notebook(model: str) -> None:
                 idx = np.arange(len(x))
             else:
                 idx = np.array([int(np.nanargmin(np.abs(x - t))) for t in want["x"]])
-                if not np.allclose(x[idx], want["x"], rtol=1e-9, atol=1e-7):
+                # make_protocol keeps step ends as ns Timedeltas: 600 steps of
+                # 0.1 s (salvatori2022) drift by ~1.3e-7 s.
+                if not np.allclose(x[idx], want["x"], rtol=1e-9, atol=1e-6):
                     failed.append(f"{figure}/{name}: time grid differs")
                     continue
             flat = 1e-3 * np.max(np.abs(want["y"]))
