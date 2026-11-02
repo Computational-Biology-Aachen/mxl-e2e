@@ -5,11 +5,18 @@ and executes exported notebooks against the same goldens as the TS engine:
 
     uv run python -m e2e.validation_export --write-fixture
     uv run python -m e2e.validation_export zaks2012
+
+A figure without goldens yet, such as one using `mca` or `stability`, can take
+them from MxlPy instead: `--freeze <figure>` writes that figure's series from the
+exported notebook, so the TS engine is then held to MxlPy's numbers.
+
+    uv run python -m e2e.validation_export poolman2000 --freeze control
 """
 
 from __future__ import annotations
 
 import json
+import linecache
 import subprocess
 import sys
 import tempfile
@@ -125,8 +132,8 @@ def check_ops() -> None:
             )
 
 
-def check_notebook(model: str) -> None:
-    """Execute a model's exported notebook; compare to its goldens."""
+def _run_notebook(model: str) -> dict[str, Any]:
+    """Execute a model's exported notebook; return its namespace."""
     mpl.use("Agg")
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "exported.ipynb"
@@ -144,12 +151,43 @@ def check_notebook(model: str) -> None:
         )
         cells = json.loads(path.read_text())["cells"]
     ns: dict[str, Any] = {"__name__": "__main__"}
-    for cell in cells:
-        if cell["cell_type"] == "code":
-            exec(cell["source"], ns)  # noqa: S102
+    code_cells = (c["source"] for c in cells if c["cell_type"] == "code")
+    for i, source in enumerate(code_cells):
+        # As a kernel does: keep each cell's source findable, since MxlPy reads
+        # functions' source (e.g. `mca.steady_state_stability`).
+        name = f"<cell-{i}>"
+        linecache.cache[name] = (
+            len(source),
+            None,
+            source.splitlines(keepends=True),
+            name,
+        )
+        exec(compile(source, name, "exec"), ns)  # noqa: S102
+    return ns
 
+
+def _freeze(
+    golden: dict[str, Any], ns: dict[str, Any], figures: tuple[str, ...]
+) -> None:
+    """Take the goldens of `figures` from the exported notebook."""
+    for figure in figures:
+        golden[figure] = {
+            name: {
+                "x": np.asarray(x, dtype=float).tolist(),
+                "y": np.asarray(y, dtype=float).tolist(),
+            }
+            for name, (x, y) in ns["validation_series"][figure].items()
+        }
+
+
+def check_notebook(model: str, freeze: tuple[str, ...] = ()) -> None:
+    """Execute a model's exported notebook; compare to its goldens."""
+    ns = _run_notebook(model)
     golden_path = GREENSLOTH / f"src/lib/models/{model}/validation.golden.json"
     golden = json.loads(golden_path.read_text())
+    if freeze:
+        _freeze(golden, ns, freeze)
+        golden_path.write_text(json.dumps(golden) + "\n")
     failed = []
     for figure, series in golden.items():
         for name, want in series.items():
@@ -183,4 +221,6 @@ if __name__ == "__main__":
         write_fixture()
     else:
         check_ops()
-        check_notebook(arg)
+        rest = sys.argv[2:]
+        freeze = tuple(rest[1:]) if rest[:1] == ["--freeze"] else ()
+        check_notebook(arg, freeze)
