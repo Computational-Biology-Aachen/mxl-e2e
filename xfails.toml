@@ -1,2 +1,5 @@
 # Known, accepted differences: phase -> model -> check -> reason. See e2e/xfails.py.
 # Every entry is a strict xfail: once the difference is gone, remove the entry.
+
+[greensloth.bellasio2019]
+generated = "green-sloth shows the paper's Table S1/S2 units verbatim (tau0, chi_beta, keq_v_PRKase, keq_v_FNR, RLight) and authored prefixes (Kh, Kh_o2, Kh_co2); see the TODO in mxl-models' bellasio2019.py"
