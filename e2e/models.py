@@ -2,9 +2,9 @@
 
 An explicit list: a model is only covered once it is added here. Left out for
 now: the steady-state models (bernacchi2013, fvcb1980 and nedbal2021 take
-arguments, gu2023/johnson2021 return plain dicts), pfennig2024 (`add_data`,
-which no exporter emits) and fuente2024 (its initial conditions come from a
-numerical root-solve, which has no MathML representation).
+arguments, gu2023/johnson2021 return plain dicts) and fuente2024 (its initial
+conditions come from a numerical root-solve, which has no MathML
+representation).
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ MODELS: dict[str, Callable[[], Model]] = {
     "matuszynska2019": mxlmodels.get_matuszynska2019,
     "morales2018": mxlmodels.get_morales2018,
     "nguyen2026_tomato": mxlmodels.get_nguyen2026_tomato,
+    "pfennig2024": mxlmodels.get_pfennig2024_synechocystis,
     "poolman2000": mxlmodels.get_poolman2000,
     "population_dynamics": mxlmodels.get_population_dynamics,
     "prigogine1968_brusselator": mxlmodels.get_prigogine1968_brusselator,

@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 GREENSLOTH = ROOT.parents[1] / "pages" / "green-sloth"
 GREENSLOTH_MODELS = GREENSLOTH / "src" / "lib" / "models"
 MAPS = ROOT / "maps"
+# The data sidecar a generated model.ts imports (`./model.data.json`).
+DATA_FILE = "model.data.json"
 
 # green-sloth slug -> e2e.models.MODELS key, for every model in both collections.
 SLUGS: dict[str, str] = {
@@ -45,6 +47,7 @@ SLUGS: dict[str, str] = {
     "matuszynska2016": "matuszynska2016_npq",
     "matuszynska2019": "matuszynska2019",
     "morales2018": "morales2018",
+    "pfennig2024": "pfennig2024",
     "poolman2000": "poolman2000",
     "saadat2021": "saadat2021",
     "salvatori2022": "salvatori2022",
@@ -64,25 +67,33 @@ def docstring(slug: str) -> str:
     return "\n".join(["/**", *lines, " */"])
 
 
-def generate(slug: str) -> str:
-    """green-sloth's `model.ts` for `slug`, generated from mxl-models."""
+def generate(slug: str) -> tuple[str, str | None]:
+    """green-sloth's `model.ts` for `slug`, generated from mxl-models, and its data sidecar (`model.data.json`, None without data)."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return meta.generate_model_code_mxlweb(
-            MODELS[SLUGS[slug]](), docstring=docstring(slug)
+        model = MODELS[SLUGS[slug]]()
+        return (
+            meta.generate_model_code_mxlweb(model, docstring=docstring(slug)),
+            meta.generate_model_data_mxlweb(model),
         )
 
 
 def stage(slug: str, *, generated: bool = False) -> Path:
-    """Copy green-sloth's committed (or a freshly generated) `model.ts` into the build dir."""
+    """Copy green-sloth's committed (or a freshly generated) `model.ts` and data sidecar into the build dir."""
     out = BUILD / "greensloth" / slug / ("generated" if generated else "committed")
     out.mkdir(parents=True, exist_ok=True)
+    (out / DATA_FILE).unlink(missing_ok=True)
     if generated:
-        (out / "model.ts").write_text(generate(slug))
+        code, data = generate(slug)
+        (out / "model.ts").write_text(code)
+        if data is not None:
+            (out / DATA_FILE).write_text(data)
         return out
     shutil.copyfile(GREENSLOTH / "src" / "lib" / "names.ts", out / "names.ts")
     source = (GREENSLOTH_MODELS / slug / "model.ts").read_text()
     (out / "model.ts").write_text(source.replace('"#lib/names.js"', '"./names.ts"'))
+    if (data_file := GREENSLOTH_MODELS / slug / DATA_FILE).exists():
+        shutil.copyfile(data_file, out / DATA_FILE)
     return out
 
 

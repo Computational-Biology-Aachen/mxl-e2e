@@ -20,16 +20,20 @@ BUILD = ROOT / "build"
 
 
 def generate_ts(factory: Callable[[], Model], out: Path) -> None:
-    """Write `out/model.ts` via mxlpy, or `out/generate-error.txt` if that fails."""
+    """Write `out/model.ts` (and its data sidecar `out/model.data.json`) via mxlpy, or `out/generate-error.txt` if that fails."""
     out.mkdir(parents=True, exist_ok=True)
-    for stale in ("model.ts", "model-gen.py", "generate-error.txt"):
+    for stale in ("model.ts", "model.data.json", "model-gen.py", "generate-error.txt"):
         (out / stale).unlink(missing_ok=True)
     try:
-        code = meta.generate_model_code_mxlweb(factory())
+        model = factory()
+        code = meta.generate_model_code_mxlweb(model)
+        data = meta.generate_model_data_mxlweb(model)
     except Exception:  # noqa: BLE001
         (out / "generate-error.txt").write_text(traceback.format_exc())
         return
     (out / "model.ts").write_text(code)
+    if data is not None:
+        (out / "model.data.json").write_text(data)
 
 
 def _npm_run(script: str, dirs: Iterable[Path]) -> None:

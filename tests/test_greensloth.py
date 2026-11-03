@@ -48,4 +48,9 @@ def test_generated(slug: str, greensloth_json: dict[str, tuple[Path, Path]]) -> 
     committed = _load(committed_dir)["model"]
     generated = _load(generated_dir)["model"]
     diffs = _diff(committed, generated)
+    committed_data, generated_data = (
+        json.loads(p.read_text()) if (p := d / "data.mxl.json").exists() else {}
+        for d in (committed_dir, generated_dir)
+    )
+    diffs += _diff({"data": committed_data}, {"data": generated_data})
     assert not diffs, "\n".join(diffs[:40])

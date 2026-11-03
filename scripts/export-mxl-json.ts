@@ -9,7 +9,10 @@ import { rmSync, writeFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-type Exportable = { buildMxlJson(modelId: string): string };
+type Exportable = {
+  buildMxlJson(modelId: string): string;
+  buildDataFile(): string | undefined;
+};
 
 for (const dir of process.argv.slice(2)) {
   const errorFile = resolve(dir, "export-error.txt");
@@ -18,8 +21,15 @@ for (const dir of process.argv.slice(2)) {
     const mod = (await import(pathToFileURL(resolve(dir, "model.ts")).href)) as {
       initModel(): Exportable;
     };
-    const json = mod.initModel().buildMxlJson(basename(resolve(dir, "..")));
+    const model = mod.initModel();
+    const json = model.buildMxlJson(basename(resolve(dir, "..")));
     writeFileSync(resolve(dir, "model.mxl.json"), json + "\n");
+    // The model's data as mxlweb-core holds it (not the input sidecar), so two
+    // models' data compare however their sidecars were formatted.
+    const dataOut = resolve(dir, "data.mxl.json");
+    rmSync(dataOut, { force: true });
+    const data = model.buildDataFile();
+    if (data !== undefined) writeFileSync(dataOut, data);
   } catch (err) {
     writeFileSync(errorFile, err instanceof Error ? (err.stack ?? err.message) : String(err));
   }

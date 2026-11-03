@@ -2,8 +2,8 @@
 
     uv run python -m e2e.regenerate_greensloth [slug ...]
 
-Writes `src/lib/models/<slug>/model.ts` in the sibling green-sloth checkout,
-moves the id references in its `meta.ts` over to the generated ids, formats
+Writes `src/lib/models/<slug>/model.ts` (and, for a model with data, its
+`model.data.json`) in the sibling green-sloth checkout, moves the id references in its `meta.ts` over to the generated ids, formats
 the files with green-sloth's own prettier and refreshes `model.mxl.json`
 (`npm run generate:mxl`, then prettier). Review the green-sloth diff before
 committing.
@@ -25,7 +25,14 @@ def main() -> None:
     files = []
     for slug in args.slugs:
         model_ts = greensloth.GREENSLOTH_MODELS / slug / "model.ts"
-        model_ts.write_text(greensloth.generate(slug))
+        code, data = greensloth.generate(slug)
+        model_ts.write_text(code)
+        data_file = model_ts.with_name(greensloth.DATA_FILE)
+        if data is not None:
+            data_file.write_text(data)
+            files.append(data_file)
+        else:
+            data_file.unlink(missing_ok=True)
         renamed = greensloth.migrate_ids(slug)
         files += [model_ts, model_ts.with_name("meta.ts")]
         print(f"{slug}: model.ts regenerated, meta.ts ids renamed: {renamed}")  # noqa: T201
