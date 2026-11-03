@@ -40,6 +40,7 @@ SLUGS: dict[str, str] = {
     "bellasio2019": "bellasio2019",
     "davis2017": "davis2017",
     "ebenhoeh2014": "ebenhoeh2014",
+    "fuente2024": "fuente2024",
     "hahn1987": "hahn1987",
     "lam2026": "lam2026",
     "lazar1997": "lazar1997",
