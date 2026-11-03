@@ -553,6 +553,8 @@ SERIES: dict[str, dict[str, dict[str, Extract]]] = {
         "fig4": {
             "qE1000": _qe("PAM_1000_WT", "PAM_1000_npq4"),
             "qE100": _qe("PAM_100_WT", "PAM_100_npq4"),
+        },
+        "fig5": {
             "wt1000_pH": _at("res_1000_WT", "pH_lumen"),
             "npq41000_pH": _at("res_1000_npq4", "pH_lumen"),
         },
