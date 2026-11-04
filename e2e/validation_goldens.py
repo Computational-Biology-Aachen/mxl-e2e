@@ -25,7 +25,6 @@ import matplotlib as mpl
 import mxlpy
 import mxlpy.parallel
 import numpy as np
-from mxlpy.runners import KineticRunner
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -172,6 +171,14 @@ def _davis_fig3(key: str, col: str) -> Extract:
     def extract(ns: Namespace) -> tuple[Any, Any]:
         frame = ns["fig3_res"].loc[key]
         return frame.index, frame[col]
+
+    return extract
+
+
+def _pfennig_fig4e(light: str) -> Extract:
+    def extract(ns: Namespace) -> tuple[Any, Any]:
+        col = ns["fig4e"][light]
+        return col.index, col
 
     return extract
 
@@ -625,6 +632,17 @@ SERIES: dict[str, dict[str, dict[str, Extract]]] = {
             ),
         },
     },
+    "pfennig2024": {
+        "fig4e": {
+            light: _pfennig_fig4e(light)
+            for light in (
+                "solar",
+                "fluorescent_lamp",
+                "cool_white_led",
+                "warm_white_led",
+            )
+        },
+    },
     "zhu2009": {
         "fig2": {c: _at("res_fig2", c) for c in ("PGA", "DPGA", "GAP", "Ru5P")},
         "fig3": {
@@ -677,7 +695,14 @@ def _run_serially() -> None:
 
 
 def _accept_integrator_argument() -> None:
-    """Translate the notebooks' `integrator=` to MxlPy's current `runner=`."""
+    """Translate the notebooks' `integrator=` to MxlPy's current `runner=`.
+
+    MxlPy versions without `mxlpy.runners` still take `integrator=` themselves.
+    """
+    try:
+        from mxlpy.runners import KineticRunner  # noqa: PLC0415
+    except ImportError:
+        return
 
     def wrap(fn: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(fn)
@@ -717,6 +742,7 @@ def run_notebook(model: str) -> Namespace:
         assets = path.parent / "assets"
         if assets.exists():
             (Path(tmp) / "assets").symlink_to(assets)
+        (Path(tmp) / "figs").mkdir()
         cwd = Path.cwd()
         os.chdir(tmp)
         try:
