@@ -632,6 +632,10 @@ SERIES: dict[str, dict[str, dict[str, Extract]]] = {
             ),
         },
     },
+    "bernacchi2013": {
+        fig: {c: _at(fig, c) for c in ("rubisco", "rubp", "tpu", "an")}
+        for fig in ("fig2", "fig3", "fig4")
+    },
     "pfennig2024": {
         "fig4e": {
             light: _pfennig_fig4e(light)
