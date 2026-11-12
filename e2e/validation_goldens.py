@@ -632,6 +632,48 @@ SERIES: dict[str, dict[str, dict[str, Extract]]] = {
             ),
         },
     },
+    "bernacchi2001": {
+        "fig1": {
+            c: _at("fig1", c)
+            for c in ("Gamma_star", "Rd", "Vcmax", "Vomax", "Vomax_Vcmax", "Kc", "Ko")
+        },
+        "fig3": {"A": _at("fig3", "A")},
+    },
+    "harley1992": {
+        "fig1": {
+            f"A_{panel}_{line}_o{o2}": _item("fig1", f"{panel}_{line}_{o2}.0", "A")
+            for panel in "ab"
+            for line in ("solid", "dashed")
+            for o2 in (20, 2)
+        },
+        "fig2": {f"R_dark_g{k}": _item("fig2", k, "R_dark") for k in ("35", "65")},
+        "fig3": {
+            f"{c}_g{k}": _item("fig3", k, c)
+            for c in ("Vcmax", "Jmax", "TPU")
+            for k in ("35", "65")
+        },
+        "fig8": {
+            f"{c}_d{k}": _item("fig8", k, c)
+            for c in ("A", "Ca", "gs")
+            for k in ("35", "65")
+        },
+    },
+    "june2004": {
+        "fig1": {"J_leaf": _at("fig1", "J"), "phi_PSII_leaf": _at("fig1", "phi_PSII")},
+        "fig2": {
+            **{f"J_n{k}": _item("fig2a", k, "J") for k in ("16", "5", "2")},
+            **{f"J_{k.lower()}": _item("fig2b", k, "J") for k in ("HN", "LN")},
+        },
+        "fig3": {
+            **{f"J_soy_g{k}": _item("fig3a", k, "J") for k in ("20", "25", "32")},
+            **{f"J_abu_g{k}": _item("fig3b", k, "J") for k in ("16", "20", "28", "32")},
+        },
+        "fig4": {"Omega_regression_reg": _at("fig4", "Omega_regression")},
+        "fig5": {
+            f"J_rel25_t{to}w{om}": _item("fig5", f"{to}_{om}", "J_rel25")
+            for to, om in (("20", "15"), ("35", "15"), ("30", "15"), ("30", "20"))
+        },
+    },
     "bernacchi2013": {
         fig: {c: _at(fig, c) for c in ("rubisco", "rubp", "tpu", "an")}
         for fig in ("fig2", "fig3", "fig4")
