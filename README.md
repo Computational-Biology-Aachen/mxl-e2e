@@ -12,6 +12,8 @@ End-to-end tests of the codegen pipeline between [MxlPy](https://github.com/Comp
 2. `model.ts` → `model-gen.py` (mxlweb-core `buildMxlpy()`, `scripts/export-mxlpy.ts`)
 3. compare `model-gen.py` against the original: same ids per kind, parameter values and initial conditions, `get_args` (readouts included) and right-hand side at the initial state plus seeded perturbations, and display names.
 
+Besides the mxl-models models, `e2e/models.py` includes `array_intermediates`: mxl-schemas' shared array-model fixture (state-dependent array-valued derived quantities, ADR 0015), read with MxlPy's `.mxl.json` loader. That way both exporters are also checked on arrays that the right-hand side reduces.
+
 Both exporters map names through the same canonical identifier rules (mxl-schemas `v1/identifiers.json`), so the generated model's ids are `canonical_identifier_map(original.ids)`: `"CO2 (dissolved)"` becomes `CO2_dissolved`, with the original name kept as `display_name`.
 
 **Phase 2, green-sloth** (`tests/test_greensloth.py`): for every model in both collections, green-sloth's `model.ts` is generated from mxl-models (`uv run python -m e2e.regenerate_greensloth [slug ...]`), so the two are the same model. mxl-models is the single source, including the display names, sliders and units green-sloth shows. The test checks that the committed `model.ts` is still exactly what the codegen produces, comparing mxlweb-core's `buildMxlJson` of both files: values, expressions, stoichiometry, units, display/LaTeX names and sliders.
