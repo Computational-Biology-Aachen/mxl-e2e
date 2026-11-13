@@ -3,20 +3,39 @@
 An explicit list: a model is only covered once it is added here. Left out for
 now: the steady-state models (bernacchi2013, fvcb1980 and nedbal2021 take
 arguments, gu2023/johnson2021 return plain dicts).
+
+Plus `array_intermediates`, the shared mxl-schemas fixture model with
+state-dependent array-valued derived quantities (ADR 0015), which no
+mxl-models model has yet.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import mxlmodels
+from mxlpy.serialize import model_from_dict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from mxlpy import Model
 
+ARRAY_FIXTURES = (
+    Path(__file__).resolve().parents[2] / "mxl-schemas/tests/array-models.fixtures.json"
+)
+
+
+def get_array_intermediates() -> Model:
+    """The mxl-schemas array-model fixture (ADR 0015), via MxlPy's .mxl.json reader."""
+    fixtures = json.loads(ARRAY_FIXTURES.read_text())
+    return model_from_dict(fixtures["model"], data_file=fixtures["data"])
+
+
 MODELS: dict[str, Callable[[], Model]] = {
+    "array_intermediates": get_array_intermediates,
     "bellasio2019": mxlmodels.get_bellasio_2019,
     "davis2017": mxlmodels.get_davis2017,
     "dynamic_enterobactin": mxlmodels.get_dynamic_enterobactin,
