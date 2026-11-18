@@ -981,15 +981,6 @@ wheels = [
 ]
 
 [[package]]
-name = "lazy-import"
-version = "0.2.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/44/2e/5378f9b9cbc893826c2ecb022646c97ece9efbaad351adf89425fff33990/lazy_import-0.2.2.tar.gz", hash = "sha256:2149aef8579459407c62cfeccf118527939c9931ace124f355236360644f8a3d", size = 15265, upload-time = "2018-01-22T02:19:32.029Z" }
-
-[[package]]
 name = "loky"
 version = "3.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1439,13 +1430,12 @@ dev = [
 
 [[package]]
 name = "mxlpy"
-version = "0.69.0"
+version = "0.71.0"
 source = { editable = "../../pkg-py/MxlPy" }
 dependencies = [
     { name = "dill" },
     { name = "kiwisolver" },
     { name = "latexify-py" },
-    { name = "lazy-import" },
     { name = "loky" },
     { name = "matplotlib" },
     { name = "mike" },
@@ -1478,7 +1468,6 @@ requires-dist = [
     { name = "keras", marker = "extra == 'keras'", specifier = ">=3.9.2" },
     { name = "kiwisolver", specifier = ">=1.5" },
     { name = "latexify-py", specifier = ">=0.4.4" },
-    { name = "lazy-import", specifier = ">=0.2.2" },
     { name = "loky", specifier = ">=3.4" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mike", specifier = ">=2.1.3" },
