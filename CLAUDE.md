@@ -8,4 +8,4 @@ Cross-repo end-to-end tests: mxl-models -> model.ts (MxlPy) -> model-gen.py (mxl
 - `xfails.toml` records accepted differences as strict xfails. Don't add entries to hide codegen bugs; fix the codegen (MxlPy `meta/_via_sym_repr.py`, mxlweb-core `buildMxlpy`) instead. Never hand-edit mxl-models or green-sloth models to make this suite pass.
 - green-sloth's overlapping models are generated from mxl-models (`uv run python -m e2e.regenerate_greensloth`); mxl-models is the single source, so add missing information (display names, sliders, units, docstrings) there, never in green-sloth's model.ts.
 - `maps/<slug>.json` (green-sloth's old hand-written id -> generated id) only list ids that changed, for the four models whose ids changed on first generation; regeneration uses them to migrate `meta.ts` references. New models need no map.
-- Canonical identifier rules: mxl-schemas `v1/identifiers.json`, implemented in `mxlpy.meta.identifiers` and mxlweb-core `src/identifiers.ts`.
+- Canonical identifier rules: mxl-schemas `v0/identifiers.json`, implemented in `mxlpy.meta.identifiers` and mxlweb-core `src/identifiers.ts`.
